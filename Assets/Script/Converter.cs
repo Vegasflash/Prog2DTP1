@@ -6,26 +6,39 @@ using UnityEngine;
 
 public class Converter : MonoBehaviour
 {
-
-
-
-    string card;
-    
-    int cardCount = 5;
-
+    int cardCounter = 0;
     int maxCount;
 
-    public string cardNumber;
+    public string cardNumber = "CardNo: ";
     public string count;
     public string priority;
     public string english;
     public string french;
     public string spanish;
 
+
+    string first_filter = "";
+    string second_filter = "";
+    string third_filter = "";
+
+    const int MAX_DECK_SIZE = 35;
+    Card[] cardList;
+
     // Use this for initialization
     void Start ()
     {
+        CreateDeck();
         Core();
+        PrintCards();
+    }
+
+    void CreateDeck()
+    {
+        cardList = new Card[MAX_DECK_SIZE];
+        for(int i = 0; i < MAX_DECK_SIZE; i++)
+        {
+            cardList[i] = new Card();
+        }
     }
 
     void Core()
@@ -37,69 +50,64 @@ public class Converter : MonoBehaviour
 
         string[] firstSegments = textAsset.ToString().Split('\n');
         string[] secondSegments;
-
-
+        
 
         int counter = 0;
-
+        
 
         foreach (string segment in firstSegments)
         {
             secondSegments = segment.Split(';');
             maxCount = secondSegments.Length;
             for (int i = 0; i < secondSegments.Length; i++)
-            {
-                switch (i)
+            {              
+                if (counter != 0)
                 {
-                    case 0:
-                        GetCardNumberSwitch(i, counter, secondSegments);
-                        break;
-                    case 1:
-                        GetCountSwitch(i, counter, secondSegments);
-                        break;
-                    case 2:
-                        GetPrioritySwitch(i, counter, secondSegments);
-                        break;
-                    case 3:
-                        GetEnglishSwitch(i, counter, secondSegments);
-                        break;
-                    case 4:
-                        GetFrenchSwitch(i, counter, secondSegments);
-                        break;
-                    case 5:
-                        GetSpanishSwitch(i, counter, secondSegments);
-                        break;
-                    default:
-                        return;
+
+                    switch (i)
+                    {
+                        case 0:
+                            SetCardNumber(i, counter, secondSegments);
+                            break;
+                        case 1:
+                            SetCount(i, counter, secondSegments);
+                            break;
+                        case 2:
+                            SetPriority(i, counter, secondSegments);
+                            break;
+                        case 3:
+                            SetEnglishPhrase(i, counter, secondSegments);
+                            break;
+                        case 4:
+                            SetFrenchPhrase(i, counter, secondSegments);
+                            break;
+                        case 5:
+                            SetSpanishPhrase(i, counter, secondSegments);
+                            if(cardCounter < MAX_DECK_SIZE + 1)
+                            {
+                                cardCounter++;
+                            }
+                            break;
+                        default:
+                            return;
+                    }
                 }             
             }
-            counter++;
-            
+            counter++;         
         }      
     }
 
-    void PrintCards(int counter)
+    void PrintCards()
     {
-        switch(counter)
+        Debug.Log(cardCounter);
+        for(int i = 0; i < MAX_DECK_SIZE; i++)
         {
-            case 0:
-                Debug.Log(cardNumber);
-                break;
-            case 1:
-                Debug.Log(count);
-                break;
-            case 2:
-                Debug.Log(priority);
-                break;
-            case 3:
-                Debug.Log(english);
-                break;
-            case 4:
-                Debug.Log(french);
-                break;
-            case 5:
-                Debug.Log(spanish);
-                break;
+            Debug.Log(cardList[i].GetCardNo());
+            Debug.Log(cardList[i].GetCardCount());
+            Debug.Log(cardList[i].GetCardPriority());
+            Debug.Log(cardList[i].GetCardEnglish());
+            Debug.Log(cardList[i].GetCardFrench());
+            Debug.Log(cardList[i].GetCardSpanish());
         }
     }
 
@@ -112,9 +120,10 @@ public class Converter : MonoBehaviour
         english = "English: ";
         french = "French: ";
         spanish = "Spanish: ";
+
     }
 
-    void GetCardNumberSwitch(int i, int counter, string[] secondSegments)
+    void SetCardNumber(int i, int counter, string[] secondSegments)
     {
         switch (counter)
         {
@@ -124,12 +133,12 @@ public class Converter : MonoBehaviour
             default:
                 cardNumber += secondSegments[i].ToString() + " ";
                 break;
-        }
-        PrintCards(i);
+        }       
+        cardList[cardCounter].SetCardNo(cardNumber);
         ClearStrings(i);
     }
 
-    void GetCountSwitch(int i, int counter, string[] secondSegments)
+    void SetCount(int i, int counter, string[] secondSegments)
     {
         switch (counter)
         {
@@ -139,12 +148,12 @@ public class Converter : MonoBehaviour
             default:
                 count += secondSegments[i].ToString() + " ";
                 break;
-        }
-        PrintCards(i);
+        }      
+        cardList[cardCounter].SetCardCount(count);
         ClearStrings(i);
     }
 
-    void GetPrioritySwitch(int i, int counter, string[] secondSegments)
+    void SetPriority(int i, int counter, string[] secondSegments)
     {
         switch (counter)
         {
@@ -154,13 +163,15 @@ public class Converter : MonoBehaviour
             default:
                 priority += secondSegments[i].ToString() + " ";
                 break;
-        }
-        PrintCards(i);
+        }    
+        cardList[cardCounter].SetCardPriority(priority);
         ClearStrings(i);
     }
 
-    void GetEnglishSwitch(int i, int counter, string[] secondSegments)
+    void SetEnglishPhrase(int i, int counter, string[] secondSegments)
     {
+        string filtered_english = "";
+
         switch (counter)
         {
             case 0:
@@ -169,13 +180,29 @@ public class Converter : MonoBehaviour
             default:
                 english += secondSegments[i].ToString() + " ";
                 break;
+        }    
+        if(!english.Contains("<P>") &&
+            !english.Contains("< P >") &&
+            !english.Contains("<C>") &&
+            !english.Contains("< C >"))
+        {
+            filtered_english = english;
         }
-        PrintCards(i);
+        else
+        {
+            first_filter = english.Replace("<P>", "\n");
+            second_filter = first_filter.Replace("< P >", "\n");
+            third_filter = second_filter.Replace("<C>", ",");
+            filtered_english = third_filter.Replace("< C> ", ",");
+
+        }
+        cardList[cardCounter].SetCardEnglish(filtered_english);
         ClearStrings(i);
     }
 
-    void GetFrenchSwitch(int i, int counter, string[] secondSegments)
+    void SetFrenchPhrase(int i, int counter, string[] secondSegments)
     {
+        string filtered_french = "";
         switch (counter)
         {
             case 0:
@@ -185,12 +212,27 @@ public class Converter : MonoBehaviour
                 french += secondSegments[i].ToString() + " ";
                 break;
         }
-        PrintCards(i);
+        if (!french.Contains("<P>") &&
+            !french.Contains("< P >") &&
+            !french.Contains("<C>")  &&
+            !french.Contains("< C >"))
+        {
+            filtered_french = french;
+        }
+        else
+        {
+            first_filter = french.Replace("<P>", "\n");
+            second_filter = first_filter.Replace("< P >", "\n");
+            third_filter = second_filter.Replace("<C>", ",");
+            filtered_french = third_filter.Replace("< C> ", ",");
+        }
+        cardList[cardCounter].SetCardFrench(filtered_french);
         ClearStrings(i);
     }
 
-    void GetSpanishSwitch(int i, int counter, string[] secondSegments)
+    void SetSpanishPhrase(int i, int counter, string[] secondSegments)
     {
+        string filtered_spanish = "";
         switch (counter)
         {
             case 0:
@@ -200,7 +242,21 @@ public class Converter : MonoBehaviour
                 spanish += secondSegments[i].ToString() + " ";
                 break;
         }
-        PrintCards(i);
+        if (!spanish.Contains("<P>") &&
+            !spanish.Contains("< P >") &&
+            !spanish.Contains("<C>") &&
+            !spanish.Contains("< C >"))
+        {
+            filtered_spanish = spanish;
+        }
+        else
+        {
+            first_filter = spanish.Replace("<P>", "\n");
+            second_filter = first_filter.Replace("< P >", "\n");
+            third_filter = second_filter.Replace("<C>", ",");
+            filtered_spanish = third_filter.Replace("< C> ", ",");
+        }
+        cardList[cardCounter].SetCardSpanish(filtered_spanish);
         ClearStrings(i);
     }
 }
